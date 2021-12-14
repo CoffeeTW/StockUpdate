@@ -1,7 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 
-block_cipher = pyi_crypto.PyiBlockCipher(key='tachan6020')
+block_cipher = pyi_crypto.PyiBlockCipher(key='22955802')
 
 
 a = Analysis(
@@ -41,5 +41,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='upload.ico',
+    icon='up.ico',
 )

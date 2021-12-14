@@ -1,3 +1,4 @@
+from ast import walk
 import tkinter as tk
 import shutil,datetime,configparser,re,requests,os,base64
 from tkinter.font import BOLD
@@ -5,52 +6,54 @@ from icon import img
 from tkinter import messagebox as tkbox
 
 
-path1 = "z:/Favorite.ini"  #堯乾贏家自選股檔案路徑
-path2 = "z:/SymbolList.xml" #嘉實XQ自選股檔案路徑
+path1 = "Z:/Favorite.ini"  #堯乾贏家自選股檔案路徑_NAS
+path2 = "Z:/SymbolList.xml" #嘉實XQ自選股檔案路徑_NAS
 
 
 #自選股檔案判斷是否存在
 def check_the_file():
     if btn1str.get() == "檢查":
         if os.path.exists(path1):
+            tk.Label(win, textvariable = dsustr,fg="Green", font=('標楷體', 15, BOLD), width=7).place(x=120, y=15)
             dsustr.set("檔案存在")
         else:
+            tk.Label(win, textvariable = dsustr,fg="Red", font=('標楷體', 15, BOLD), width=7).place(x=120, y=15)
             dsustr.set("檔案不在")
+            tkbox.showerror("錯誤訊息","請檢查網路磁碟或檔案")
         if os.path.exists(path2):
+            tk.Label(win, textvariable = xqstr,fg="green", font=('標楷體', 15, BOLD), width=7).place(x=120, y=80)
             xqstr.set("檔案存在")
         else:
+            tk.Label(win, textvariable = xqstr,fg="red", font=('標楷體', 15, BOLD), width=7).place(x=120, y=80)
             xqstr.set("檔案不在")
-            tkbox.showerror("錯誤訊息","請檢查網路連線或網路磁碟")
+            tkbox.showerror("錯誤訊息","請檢查網路磁碟或檔案")
 
 #自選股上傳
 def upload_file():
-    #堯乾贏家&嘉實XQ 自選股 本機 To 網路磁碟
-    shutil.copy('C:/Users/Tachan-MIS/Documents/Deimos(Broker)/A123/Template/MSimpleSelfSel/Favorite.ini' ,'z:/Favorite.ini') #堯乾贏家自選股
-    shutil.copy('C:/SysJust/XQ2005/User/Data/SymbolList.xml' ,'z:/SymbolList.xml') #嘉實XQ自選股
-
-    #堯乾贏家&嘉實XQ 自選股備份 重新命名加上日期
     nowtime = datetime.datetime.now().strftime("%Y%m%d-%H%M")
-    dir = "z:/"
-    xqsort = 'xml'
+    De_Stack = "C:/Syspower/Deimos/A123/Template/MSimpleSelfSel/" #堯錢贏家自選股路徑_本機
+    XQ_Stack = "C:/SysJust/XQ2005/User/TACHAN-17/Data/" #XQ自選股路徑_本機
+    
+    #堯乾贏家 自選股備份 重新命名加上日期
     dsusort = 'ini'
-    for dirs, files in os.walk(dir):
-        if 'bakup' in dirs:
-            dirs.remove('bakup')
-            for file in files:
-                if file.split('.')[1] == xqsort and dsusort:
-                    shutil.copy(src=f'z:/SymbolList.xml', dst=f'z:/bakup/' + str(nowtime) + '_' + 'SymbolList.xml' )
-                    shutil.copy(src=f'z:/Favorite.ini', dst=f'z:/bakup/' + str(nowtime) + '_' + 'Favorite.ini' )
+    for root, dirs, files in os.walk(De_Stack):
+        for file in files:
+            if file.split('.')[1] == dsusort:
+                source = De_Stack + 'Favorite.ini'
+                DePath = source
+                destination = 'Z:/bak/' + str(nowtime) + '_' + 'Favorite.ini'
+                shutil.copy(source, destination)
 
     #讀取堯乾贏家自選股股票代碼添加.TW
     DeimosConf = configparser.ConfigParser()
-    DeimosConf.read('z:/Favorite.ini')
+    DeimosConf.read(source)
 
     DeimosText = DeimosConf['自選群組']['自選 1']
     stock_id = DeimosText.split(',')
     stock_xq = ".TW,".join(stock_id)
 
     #XQ自選股 替換
-    XQPath = "z:/SymbolList.xml"
+    XQPath = XQ_Stack + 'SymbolList.xml'
     XQnew = '    <List ID="9E55ECC3-6F66-4389-8369-C6D98D0075A5" Name="MASTER" Value="'+ stock_xq + '.TW" Flag="0" SortIdx="1" Version="1" />\n'
     with open(XQPath, "r") as file: #讀取第四行資料暫存在XQold
         XQold = file.readlines()[3]
@@ -61,9 +64,26 @@ def upload_file():
     with open(XQPath, "w") as file: #替換第四行資料
         x = x.replace(XQold,XQnew).replace("FITX1.TW", "FITX1.TF")
         file.write(x)
+        
+    #嘉實XQ 自選股備份 重新命名加上日期
+    xqsort = 'xml'
+    for root, dirs, files in os.walk(XQ_Stack):
+        for file in files:
+            if file.split('.')[1] == xqsort:
+                source = XQ_Stack + 'SymbolList.xml'
+                destination = 'Z:/bak/' + str(nowtime) + '_' + 'SymbolList.xml'
+                shutil.copy(source, destination)
+              
+    #Copy嘉實XQ自選股 To 好神通自選股
+    shutil.copy(source,'C:/SINOAP/User/Data/SymbolList.xml') #好神通自選股
+    
+    #堯錢贏家&嘉實XQ 自選股 Copy To NAS(老闆專用資料夾)
+    shutil.copy(DePath,'Z:/') #堯錢贏家 自選股
+    shutil.copy(XQPath,'Z:/') #嘉實XQ 自選股
+    
 
     #手機自選股上傳
-    DeimosPath = open("z:/Favorite.ini", "r")
+    DeimosPath = open("C:/Syspower/Deimos/A123/Template/MSimpleSelfSel/Favorite.ini", "r")
     line = DeimosPath.readlines()[1]
     line = re.sub("自選 1=","",line) #刪除字元
     iphone_stock_group = ""
@@ -96,17 +116,15 @@ def upload_file():
     stock_ipad = ipad_url + iphone_stock
     requests.get(stock_ipad)
 
-    if(iphone_code == 200):
-        upstr.set('上傳成功')
+    if(iphone_code.status_code == 200):
+        tkbox.showinfo("訊息","上傳完成")
     else:
-        upstr.set('上傳失敗')
-
-
+        tkbox.showerror("訊息","上傳失敗")
 
 #圖形化介面框架
 win = tk.Tk()
 win.title('自選股上傳')
-win.geometry('250x200') #視窗尺寸
+win.geometry('310x140') #視窗尺寸
 win.resizable(False, False)
 win.configure(background="#F0F0F0") #背景顏色
 
@@ -116,43 +134,28 @@ ico.close()
 win.iconbitmap('1.ico') #標題小圖示
 os.remove('1.ico')
 
-
 #檢查檔案的框架
-lab1 = tk.Label(win, text="堯乾贏家：", font=('微軟正黑體', 11))
-lab1.grid(column=0, row=0, pady=10, sticky=tk.N+tk.W)
+tk.Label(win, text="堯乾贏家：", font=('標楷體', 15, BOLD)).place(x=15, y=15)
 
 dsustr = tk.StringVar()
-dsu = tk.Label(win, textvariable = dsustr, font=('微軟正黑體', 11, BOLD), width=7)
-
+dsu = tk.Label(win, textvariable = dsustr, font=('標楷體', 15, BOLD), width=7).place(x=120, y=15)
 dsustr.set("未知")
-dsu.grid(column=0, row=0, padx=80, pady=10, sticky=tk.N+tk.W)
 
 
-
-lab2 = tk.Label(win, text="嘉實XQ：", font=('微軟正黑體', 11))
-lab2.grid(row=0,column=0, pady=35, sticky=tk.N+tk.W)
+tk.Label(win, text="嘉 實 XQ：", font=('標楷體', 15, BOLD)).place(x=15, y=80)
+tk.Label(win, text="Ver: 2022.06.29", font=('標楷體', 10)).place(x=15, y=120)
 
 xqstr = tk.StringVar()
-xq = tk.Label(win, textvariable = xqstr, font=('微軟正黑體', 11, BOLD), width=7)
-
+xq = tk.Label(win, textvariable = xqstr, font=('標楷體', 15, BOLD), width=7).place(x=120, y=80)
 xqstr.set("未知")
-xq.grid(row=0,column=0, pady=35, padx=80, sticky=tk.N+tk.W)
 
 btn1str = tk.StringVar()
-btn1 = tk.Button(win, textvariable = btn1str, command=check_the_file)
+btn1 = tk.Button(win, textvariable = btn1str, command=check_the_file, font=('標楷體', 15, BOLD)).place(x=220, y=15)
 btn1str.set("檢查")
-btn1.grid(row=0, column=0, padx=150, ipadx=30, ipady=30)
 
 #自選股檔案上傳的框架
-upstr = tk.StringVar()
-up = tk.Label(win, textvariable = upstr, font=('微軟正黑體', 11, BOLD), width=7)
-
-upstr.set("尚未上傳")
-up.grid(row=1,column=0, pady=25, padx=30, sticky=tk.N+tk.W)
-
 btn2str = tk.StringVar()
-btn2 = tk.Button(win, textvariable = btn2str, command=upload_file)
+btn2 = tk.Button(win, textvariable = btn2str, command=upload_file, font=('標楷體', 15, BOLD)).place(x=220, y=80)
 btn2str.set("上傳")
-btn2.grid(row=1, column=0, padx=150, ipadx=30, ipady=30)
 
 win.mainloop()
